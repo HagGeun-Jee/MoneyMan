@@ -19,7 +19,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
   const [bills, setBills] = useState([]);
   const [billsLoading, setBillsLoading] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [generateAmount, setGenerateAmount] = useState('70000'); // 기본 부과금액 7만원
+  const [generateAmount, setGenerateAmount] = useState(() => {
+    return localStorage.getItem('default_billing_amount') || '30000';
+  });
   const [billError, setBillError] = useState('');
 
   // 3. 완납 일자 지정 상태
@@ -185,7 +187,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
 
   const openGenerateModal = () => {
     setSelectedGenIdsForBill(generations.map(g => g.id));
-    setGenerateAmount('70000');
+    setGenerateAmount(localStorage.getItem('default_billing_amount') || '30000');
     setBillError('');
     setShowGenerateModal(true);
   };
@@ -215,6 +217,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         .upsert(billsToInsert, { onConflict: 'unit_id,billing_month', ignoreDuplicates: true });
 
       if (upsertError) throw upsertError;
+
+      // 성공적으로 부과 시 입력한 금액을 로컬 스토리지에 기억
+      localStorage.setItem('default_billing_amount', generateAmount);
 
       setShowGenerateModal(false);
       fetchBills();
