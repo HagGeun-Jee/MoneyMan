@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, Filter, Calendar, X, AlertTriangle, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Calendar, X, AlertTriangle, Image as ImageIcon, Edit2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 function TransactionList({ refreshTrigger, onDataChange }) {
@@ -24,6 +24,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
   const [formError, setFormError] = useState('');
   const [receiptFile, setReceiptFile] = useState(null); // 영수증 파일 상태 추가
   const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null); // 영수증 보기 모달 상태 추가
+  const [editingTransaction, setEditingTransaction] = useState(null); // 수정 중인 거래 내역
 
   const categories = {
     IN: ['관리비 입금', '이자 수익', '기타 입금'],
@@ -82,6 +83,19 @@ function TransactionList({ refreshTrigger, onDataChange }) {
     });
   };
 
+  const startEditTransaction = (tx) => {
+    setEditingTransaction(tx);
+    setFormData({
+      type: tx.type,
+      category: tx.category,
+      amount: tx.amount.toString(),
+      date: tx.date,
+      description: tx.description || ''
+    });
+    setReceiptFile(null);
+    setShowAddForm(true);
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -97,7 +111,8 @@ function TransactionList({ refreshTrigger, onDataChange }) {
     }
 
     try {
-      let receiptImageUrl = null;
+      let receiptImageUrl = editingTransaction ? editingTransaction.receipt_image : null;
+      
       if (type === 'OUT' && receiptFile) {
         const fileExt = receiptFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
@@ -115,18 +130,34 @@ function TransactionList({ refreshTrigger, onDataChange }) {
         receiptImageUrl = publicUrl;
       }
 
-      const { error: insertError } = await supabase
-        .from('transactions')
-        .insert([{
-          type,
-          category,
-          amount: parseInt(amount),
-          date,
-          description,
-          receipt_image: receiptImageUrl
-        }]);
+      if (editingTransaction) {
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({
+            type,
+            category,
+            amount: parseInt(amount),
+            date,
+            description,
+            receipt_image: receiptImageUrl
+          })
+          .eq('id', editingTransaction.id);
 
-      if (insertError) throw insertError;
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('transactions')
+          .insert([{
+            type,
+            category,
+            amount: parseInt(amount),
+            date,
+            description,
+            receipt_image: receiptImageUrl
+          }]);
+
+        if (insertError) throw insertError;
+      }
 
       // 폼 초기화 및 닫기
       setFormData({
@@ -137,6 +168,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
         description: ''
       });
       setReceiptFile(null); // 파일 초기화
+      setEditingTransaction(null);
       setShowAddForm(false);
       onDataChange(); // 부모 상태 리프레시 유도
       fetchTransactions();
@@ -183,7 +215,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
           <h2 style={{ fontSize: '1.8rem', fontWeight: 700 }}>입출금 내역</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>통장의 모든 입금과 출금 세부 내역을 기록하고 조회합니다.</p>
         </div>
-        <button onClick={() => setShowAddForm(true)} className="btn-primary">
+        <button onClick={() => { setEditingTransaction(null); setFormData({ type: 'OUT', category: '청소비', amount: '', date: new Date().toISOString().slice(0, 10), description: '' }); setReceiptFile(null); setShowAddForm(true); }} className="btn-primary">
           <Plus size={18} /> 거래 등록
         </button>
       </div>
@@ -277,7 +309,15 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                     <td style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
                       {tx.type === 'IN' ? '+' : '-'}{formatKRW(tx.amount).replace('₩', '')}원
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                      <button 
+                        onClick={() => startEditTransaction(tx)}
+                        className="btn-secondary" 
+                        style={{ padding: '6px', borderRadius: '6px', color: '#818CF8' }}
+                        title="거래 수정"
+                      >
+                        <Edit2 size={15} />
+                      </button>
                       <button 
                         onClick={() => handleDelete(tx.id)}
                         className="btn-danger" 
@@ -321,8 +361,8 @@ function TransactionList({ refreshTrigger, onDataChange }) {
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>입출금 내역 등록</h3>
-              <button onClick={() => setShowAddForm(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{editingTransaction ? '입출금 내역 수정' : '입출금 내역 등록'}</h3>
+              <button onClick={() => { setShowAddForm(false); setEditingTransaction(null); }} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>
 
             {formError && (
@@ -420,6 +460,11 @@ function TransactionList({ refreshTrigger, onDataChange }) {
               {formData.type === 'OUT' && (
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>영수증 사진 첨부 (촬영/갤러리)</label>
+                  {editingTransaction && editingTransaction.receipt_image && (
+                    <div style={{ fontSize: '0.75rem', color: '#818CF8', marginBottom: '6px' }}>
+                      * 기존 영수증 사진 있음 (새 사진 선택 시 교체됩니다.)
+                    </div>
+                  )}
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -436,8 +481,8 @@ function TransactionList({ refreshTrigger, onDataChange }) {
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="button" onClick={() => { setShowAddForm(false); setReceiptFile(null); }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>등록</button>
+                <button type="button" onClick={() => { setShowAddForm(false); setReceiptFile(null); setEditingTransaction(null); }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>{editingTransaction ? '수정' : '등록'}</button>
               </div>
             </form>
           </div>
