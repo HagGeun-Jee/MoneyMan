@@ -309,6 +309,75 @@ function GenerationList({ refreshTrigger, onDataChange }) {
     }
   };
 
+  const handleAddBill = async (unitId, unitName, residentName) => {
+    const defaultAmount = localStorage.getItem('default_billing_amount') || '30000';
+    const amountStr = window.prompt(
+      `[개별 부과] ${unitName} (${residentName}) 세대의 ${selectedMonth} 관리비 부과 금액을 입력하세요.`,
+      defaultAmount
+    );
+    if (amountStr === null) return; // 취소 클릭
+    if (!amountStr || isNaN(amountStr) || parseInt(amountStr) <= 0) {
+      alert('올바른 부과 금액을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      const amount = parseInt(amountStr);
+      const { error } = await supabase
+        .from('maintenance_bills')
+        .insert([{
+          unit_id: unitId,
+          billing_month: selectedMonth,
+          amount: amount,
+          is_paid: 0
+        }]);
+
+      if (error) {
+        if (error.message && error.message.includes('unique')) {
+          throw new Error('이미 해당 월의 관리비가 부과된 세대입니다.');
+        }
+        throw error;
+      }
+
+      fetchBills();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleCancelBill = async (bill) => {
+    const confirmMsg = bill.is_paid === 1
+      ? `${bill.unit_name} 세대는 완납 상태입니다.\n부과를 취소하면 수납 입금 거래 내역도 함께 삭제됩니다.\n그래도 청구(부과)를 취소하시겠습니까?`
+      : `${bill.unit_name} 세대의 ${selectedMonth} 관리비 청구(부과)를 취소하시겠습니까?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      // 1) 완납 상태이고 입출금 거래 내역 연계 시 먼저 삭제
+      if (bill.is_paid === 1 && bill.transaction_id) {
+        const { error: deleteTxError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', bill.transaction_id);
+
+        if (deleteTxError) throw deleteTxError;
+      }
+
+      // 2) 고지서 삭제
+      const { error: deleteBillError } = await supabase
+        .from('maintenance_bills')
+        .delete()
+        .eq('id', bill.id);
+
+      if (deleteBillError) throw deleteBillError;
+
+      fetchBills();
+      onDataChange();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   useEffect(() => {
     fetchGenerations();
   }, []);
@@ -440,23 +509,42 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {isBilled ? (
-                              <button 
-                                onClick={() => handleTogglePay(bill)}
-                                className={bill.is_paid === 1 ? 'btn-secondary' : 'btn-primary'}
-                                style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}
-                              >
-                                {bill.is_paid === 1 ? (
-                                  <>
-                                    <XCircle size={14} /> 미납 변경
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 size={14} /> 완납 처리
-                                  </>
-                                )}
-                              </button>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                <button 
+                                  onClick={() => handleTogglePay(bill)}
+                                  className={bill.is_paid === 1 ? 'btn-secondary' : 'btn-primary'}
+                                  style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}
+                                >
+                                  {bill.is_paid === 1 ? (
+                                    <>
+                                      <XCircle size={14} /> 미납 변경
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle2 size={14} /> 완납 처리
+                                    </>
+                                  )}
+                                </button>
+                                <button 
+                                  onClick={() => handleCancelBill(bill)}
+                                  className="btn-danger"
+                                  style={{ padding: '6px 8px', fontSize: '0.8rem', borderRadius: '6px' }}
+                                  title="청구서 부과 취소"
+                                >
+                                  부과 취소
+                                </button>
+                              </div>
                             ) : (
-                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>부과 필요</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>부과 필요</span>
+                                <button 
+                                  onClick={() => handleAddBill(bill.unit_id, bill.unit_name, bill.resident_name)}
+                                  className="btn-primary"
+                                  style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '4px' }}
+                                >
+                                  부과
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
