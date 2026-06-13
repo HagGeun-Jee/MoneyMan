@@ -481,7 +481,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                       <th style={{ textAlign: 'right' }}>부과 금액</th>
                       <th style={{ textAlign: 'center' }}>수납 상태</th>
                       <th>납부일자</th>
-                      <th style={{ textAlign: 'center', width: '120px' }}>납부 처리</th>
+                      <th style={{ textAlign: 'center', width: '210px' }}>납부 처리</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -509,11 +509,11 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {isBilled ? (
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
                                 <button 
                                   onClick={() => handleTogglePay(bill)}
                                   className={bill.is_paid === 1 ? 'btn-secondary' : 'btn-primary'}
-                                  style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}
+                                  style={{ padding: '6px 10px', fontSize: '0.8rem', gap: '4px', minWidth: '98px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
                                   {bill.is_paid === 1 ? (
                                     <>
@@ -528,19 +528,19 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                                 <button 
                                   onClick={() => handleCancelBill(bill)}
                                   className="btn-danger"
-                                  style={{ padding: '6px 8px', fontSize: '0.8rem', borderRadius: '6px' }}
+                                  style={{ padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', minWidth: '82px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                                   title="청구서 부과 취소"
                                 >
                                   부과 취소
                                 </button>
                               </div>
                             ) : (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>부과 필요</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', minHeight: '32px' }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: '98px', textAlign: 'center', display: 'inline-block' }}>부과 필요</span>
                                 <button 
                                   onClick={() => handleAddBill(bill.unit_id, bill.unit_name, bill.resident_name)}
                                   className="btn-primary"
-                                  style={{ padding: '4px 8px', fontSize: '0.75rem', borderRadius: '4px' }}
+                                  style={{ padding: '6px 10px', fontSize: '0.8rem', borderRadius: '6px', minWidth: '82px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
                                   부과
                                 </button>
