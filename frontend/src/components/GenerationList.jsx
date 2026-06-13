@@ -22,6 +22,11 @@ function GenerationList({ refreshTrigger, onDataChange }) {
   const [generateAmount, setGenerateAmount] = useState('70000'); // 기본 부과금액 7만원
   const [billError, setBillError] = useState('');
 
+  // 3. 완납 일자 지정 상태
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [selectedBillForPay, setSelectedBillForPay] = useState(null);
+  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+
   // ----------------------------------------------------
   // 세대 관리 로직
   // ----------------------------------------------------
@@ -213,56 +218,13 @@ function GenerationList({ refreshTrigger, onDataChange }) {
     }
   };
 
-  const handleTogglePay = async (billId) => {
-    if (!billId) return;
-    try {
-      const { data: bill, error: billError } = await supabase
-        .from('maintenance_bills')
-        .select(`
-          *,
-          generations (
-            unit_name,
-            resident_name
-          )
-        `)
-        .eq('id', billId)
-        .single();
-
-      if (billError) throw billError;
-      if (!bill) throw new Error('해당 관리비 청구 내역을 찾을 수 없습니다.');
-
-      const nextIsPaid = bill.is_paid === 1 ? 0 : 1;
-      const todayStr = new Date().toISOString().slice(0, 10);
-
-      if (nextIsPaid === 1) {
-        const category = '관리비 입금';
-        const description = `${bill.generations.unit_name} (${bill.generations.resident_name}) ${bill.billing_month} 관리비 납부`;
-        
-        const { data: newTx, error: txError } = await supabase
-          .from('transactions')
-          .insert([{
-            type: 'IN',
-            category,
-            amount: bill.amount,
-            date: todayStr,
-            description
-          }])
-          .select()
-          .single();
-
-        if (txError) throw txError;
-
-        const { error: updateBillError } = await supabase
-          .from('maintenance_bills')
-          .update({
-            is_paid: 1,
-            payment_date: todayStr,
-            transaction_id: newTx.id
-          })
-          .eq('id', billId);
-
-        if (updateBillError) throw updateBillError;
-      } else {
+  const handleTogglePay = async (bill) => {
+    if (!bill.id) return;
+    
+    if (bill.is_paid === 1) {
+      // 이미 완납 상태 -> 미납 변경 처리 (모달 없이 즉시 실행)
+      if (!window.confirm(`${bill.unit_name} 세대의 납부 상태를 미납으로 변경하시겠습니까?\n관련 입금 거래 내역도 자동으로 삭제됩니다.`)) return;
+      try {
         if (bill.transaction_id) {
           const { error: deleteTxError } = await supabase
             .from('transactions')
@@ -279,13 +241,59 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             payment_date: null,
             transaction_id: null
           })
-          .eq('id', billId);
+          .eq('id', bill.id);
 
         if (updateBillError) throw updateBillError;
-      }
 
+        fetchBills();
+        onDataChange();
+      } catch (err) {
+        alert(err.message);
+      }
+    } else {
+      // 미납 상태 -> 완납 처리 모달 오픈
+      setSelectedBillForPay(bill);
+      setPayDate(new Date().toISOString().slice(0, 10)); // 오늘 날짜 기본값
+      setShowPayModal(true);
+    }
+  };
+
+  const executePay = async () => {
+    if (!selectedBillForPay) return;
+    try {
+      const bill = selectedBillForPay;
+      const category = '관리비 입금';
+      const description = `${bill.unit_name} (${bill.resident_name}) ${bill.billing_month} 관리비 납부`;
+      
+      const { data: newTx, error: txError } = await supabase
+        .from('transactions')
+        .insert([{
+          type: 'IN',
+          category,
+          amount: bill.amount,
+          date: payDate,
+          description
+        }])
+        .select()
+        .single();
+
+      if (txError) throw txError;
+
+      const { error: updateBillError } = await supabase
+        .from('maintenance_bills')
+        .update({
+          is_paid: 1,
+          payment_date: payDate,
+          transaction_id: newTx.id
+        })
+        .eq('id', bill.id);
+
+      if (updateBillError) throw updateBillError;
+
+      setShowPayModal(false);
+      setSelectedBillForPay(null);
       fetchBills();
-      onDataChange(); // 잔액 및 입출금 갱신 유도
+      onDataChange();
     } catch (err) {
       alert(err.message);
     }
@@ -423,7 +431,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                           <td style={{ textAlign: 'center' }}>
                             {isBilled ? (
                               <button 
-                                onClick={() => handleTogglePay(bill.id)}
+                                onClick={() => handleTogglePay(bill)}
                                 className={bill.is_paid === 1 ? 'btn-secondary' : 'btn-primary'}
                                 style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}
                               >
@@ -723,6 +731,65 @@ function GenerationList({ refreshTrigger, onDataChange }) {
               >
                 삭제하기
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. 관리비 완납 처리 (납부일자 선택) 모달 */}
+      {showPayModal && selectedBillForPay && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '400px',
+            padding: '30px',
+            backgroundColor: '#111827',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>관리비 완납 처리</h3>
+              <button onClick={() => { setShowPayModal(false); setSelectedBillForPay(null); }} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ fontSize: '0.95rem', color: 'var(--text-main)', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>대상 세대:</span>
+                <strong>{selectedBillForPay.unit_name} ({selectedBillForPay.resident_name})</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--text-muted)' }}>청구 월:</span>
+                <strong>{selectedBillForPay.billing_month}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>납부 금액:</span>
+                <strong style={{ color: '#818CF8' }}>{formatKRW(selectedBillForPay.amount)}</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>실제 납부 일자</label>
+              <input 
+                type="date" 
+                value={payDate} 
+                onChange={(e) => setPayDate(e.target.value)} 
+                style={{ width: '100%', padding: '10px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <button type="button" onClick={() => { setShowPayModal(false); setSelectedBillForPay(null); }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
+              <button type="button" onClick={executePay} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>완납 완료</button>
             </div>
           </div>
         </div>
