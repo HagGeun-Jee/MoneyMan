@@ -1,0 +1,700 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, CheckCircle2, XCircle, Users, Receipt, Phone, Hash, X, AlertTriangle } from 'lucide-react';
+import { supabase } from '../supabaseClient';
+
+function GenerationList({ refreshTrigger, onDataChange }) {
+  const [activeSubTab, setActiveSubTab] = useState('bills'); // 'bills' or 'generations'
+  
+  // 1. 세대 관련 상태
+  const [generations, setGenerations] = useState([]);
+  const [genLoading, setGenLoading] = useState(false);
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [editingGen, setEditingGen] = useState(null);
+  const [genForm, setGenForm] = useState({ unit_name: '', resident_name: '', contact: '' });
+  const [genError, setGenError] = useState('');
+  const [genToDelete, setGenToDelete] = useState(null); // 삭제 확인용 커스텀 모달 상태 추가
+
+  // 2. 수납 관련 상태
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+  const [bills, setBills] = useState([]);
+  const [billsLoading, setBillsLoading] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generateAmount, setGenerateAmount] = useState('70000'); // 기본 부과금액 7만원
+  const [billError, setBillError] = useState('');
+
+  // ----------------------------------------------------
+  // 세대 관리 로직
+  // ----------------------------------------------------
+  const fetchGenerations = async () => {
+    setGenLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('generations')
+        .select('*')
+        .order('unit_name', { ascending: true });
+
+      if (error) throw error;
+      setGenerations(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const handleGenSubmit = async (e) => {
+    e.preventDefault();
+    setGenError('');
+    if (!genForm.unit_name || !genForm.resident_name) {
+      setGenError('호수와 세대주명은 필수 입력입니다.');
+      return;
+    }
+
+    try {
+      if (editingGen) {
+        const { error } = await supabase
+          .from('generations')
+          .update({
+            unit_name: genForm.unit_name,
+            resident_name: genForm.resident_name,
+            contact: genForm.contact
+          })
+          .eq('id', editingGen.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('generations')
+          .insert([{
+            unit_name: genForm.unit_name,
+            resident_name: genForm.resident_name,
+            contact: genForm.contact
+          }]);
+
+        if (error) {
+          if (error.message && error.message.includes('unique')) {
+            throw new Error('이미 존재하는 호수입니다.');
+          }
+          throw error;
+        }
+      }
+
+      setShowGenModal(false);
+      setGenForm({ unit_name: '', resident_name: '', contact: '' });
+      setEditingGen(null);
+      fetchGenerations();
+      // 수납 현황도 갱신
+      fetchBills();
+    } catch (err) {
+      setGenError(err.message);
+    }
+  };
+
+  const startEditGen = (gen) => {
+    setEditingGen(gen);
+    setGenForm({
+      unit_name: gen.unit_name,
+      resident_name: gen.resident_name,
+      contact: gen.contact || ''
+    });
+    setShowGenModal(true);
+  };
+
+  const handleDeleteGen = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('generations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setGenToDelete(null); // 삭제 성공 시 모달 닫기
+      fetchGenerations();
+      fetchBills();
+      onDataChange(); // 잔액 갱신용
+    } catch (err) {
+      console.error("[Frontend] Delete generation error:", err);
+      alert(`세대 삭제 오류: ${err.message}`);
+    }
+  };
+
+  // ----------------------------------------------------
+  // 수납 관리 로직
+  // ----------------------------------------------------
+  const fetchBills = async () => {
+    setBillsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('generations')
+        .select(`
+          id,
+          unit_name,
+          resident_name,
+          maintenance_bills (
+            id,
+            billing_month,
+            amount,
+            is_paid,
+            payment_date,
+            transaction_id
+          )
+        `)
+        .eq('maintenance_bills.billing_month', selectedMonth)
+        .order('unit_name', { ascending: true });
+
+      if (error) throw error;
+
+      // Flat 형태로 변환 (기존 SQLite LEFT JOIN UI 호환)
+      const formattedBills = (data || []).map(gen => {
+        const bill = gen.maintenance_bills && gen.maintenance_bills[0];
+        return {
+          id: bill ? bill.id : null,
+          unit_id: gen.id,
+          unit_name: gen.unit_name,
+          resident_name: gen.resident_name,
+          billing_month: bill ? bill.billing_month : selectedMonth,
+          amount: bill ? bill.amount : null,
+          is_paid: bill ? bill.is_paid : 0,
+          payment_date: bill ? bill.payment_date : null,
+          transaction_id: bill ? bill.transaction_id : null
+        };
+      });
+
+      setBills(formattedBills);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBillsLoading(false);
+    }
+  };
+
+  const handleGenerateBills = async (e) => {
+    e.preventDefault();
+    setBillError('');
+    if (!generateAmount || isNaN(generateAmount) || parseInt(generateAmount) <= 0) {
+      setBillError('올바른 부과 금액을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      const { data: gens, error: genError } = await supabase
+        .from('generations')
+        .select('id');
+
+      if (genError) throw genError;
+      if (!gens || gens.length === 0) {
+        throw new Error('등록된 세대가 없습니다. 세대를 먼저 등록해주세요.');
+      }
+
+      const billsToInsert = gens.map(g => ({
+        unit_id: g.id,
+        billing_month: selectedMonth,
+        amount: parseInt(generateAmount),
+        is_paid: 0
+      }));
+
+      const { error: upsertError } = await supabase
+        .from('maintenance_bills')
+        .upsert(billsToInsert, { onConflict: 'unit_id,billing_month', ignoreDuplicates: true });
+
+      if (upsertError) throw upsertError;
+
+      setShowGenerateModal(false);
+      fetchBills();
+    } catch (err) {
+      setBillError(err.message);
+    }
+  };
+
+  const handleTogglePay = async (billId) => {
+    if (!billId) return;
+    try {
+      const { data: bill, error: billError } = await supabase
+        .from('maintenance_bills')
+        .select(`
+          *,
+          generations (
+            unit_name,
+            resident_name
+          )
+        `)
+        .eq('id', billId)
+        .single();
+
+      if (billError) throw billError;
+      if (!bill) throw new Error('해당 관리비 청구 내역을 찾을 수 없습니다.');
+
+      const nextIsPaid = bill.is_paid === 1 ? 0 : 1;
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      if (nextIsPaid === 1) {
+        const category = '관리비 입금';
+        const description = `${bill.generations.unit_name} (${bill.generations.resident_name}) ${bill.billing_month} 관리비 납부`;
+        
+        const { data: newTx, error: txError } = await supabase
+          .from('transactions')
+          .insert([{
+            type: 'IN',
+            category,
+            amount: bill.amount,
+            date: todayStr,
+            description
+          }])
+          .select()
+          .single();
+
+        if (txError) throw txError;
+
+        const { error: updateBillError } = await supabase
+          .from('maintenance_bills')
+          .update({
+            is_paid: 1,
+            payment_date: todayStr,
+            transaction_id: newTx.id
+          })
+          .eq('id', billId);
+
+        if (updateBillError) throw updateBillError;
+      } else {
+        if (bill.transaction_id) {
+          const { error: deleteTxError } = await supabase
+            .from('transactions')
+            .delete()
+            .eq('id', bill.transaction_id);
+
+          if (deleteTxError) throw deleteTxError;
+        }
+
+        const { error: updateBillError } = await supabase
+          .from('maintenance_bills')
+          .update({
+            is_paid: 0,
+            payment_date: null,
+            transaction_id: null
+          })
+          .eq('id', billId);
+
+        if (updateBillError) throw updateBillError;
+      }
+
+      fetchBills();
+      onDataChange(); // 잔액 및 입출금 갱신 유도
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchGenerations();
+  }, []);
+
+  useEffect(() => {
+    fetchBills();
+  }, [selectedMonth, refreshTrigger]);
+
+  const formatKRW = (value) => {
+    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+  };
+
+  // 현재 청구서가 발행된 호수가 몇 개인지, 완납된 세대는 몇 개인지 계산
+  const billedCount = bills.filter(b => b.id !== null).length;
+  const paidCount = bills.filter(b => b.id !== null && b.is_paid === 1).length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      {/* Header and Sub Tabs */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+        <div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 700 }}>세대 & 수납 관리</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>세대 정보를 관리하고 월별 관리비 부과 및 납부 여부를 관리합니다.</p>
+        </div>
+        
+        {/* Sub Navigation Tabs */}
+        <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+          <button 
+            onClick={() => setActiveSubTab('bills')}
+            style={{
+              padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 500,
+              backgroundColor: activeSubTab === 'bills' ? 'var(--color-primary)' : 'transparent',
+              color: activeSubTab === 'bills' ? 'white' : 'var(--text-muted)',
+              transition: 'var(--transition-smooth)'
+            }}
+          >
+            <Receipt size={14} style={{ marginRight: '6px', display: 'inline', verticalAlign: 'middle' }} />
+            관리비 수납 현황
+          </button>
+          <button 
+            onClick={() => setActiveSubTab('generations')}
+            style={{
+              padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 500,
+              backgroundColor: activeSubTab === 'generations' ? 'var(--color-primary)' : 'transparent',
+              color: activeSubTab === 'generations' ? 'white' : 'var(--text-muted)',
+              transition: 'var(--transition-smooth)'
+            }}
+          >
+            <Users size={14} style={{ marginRight: '6px', display: 'inline', verticalAlign: 'middle' }} />
+            세대 정보 관리
+          </button>
+        </div>
+      </div>
+
+      {/* Main Sub Panel */}
+      {activeSubTab === 'bills' ? (
+        // ----------------------------------------------------
+        // 탭 1: 관리비 수납 현황 뷰
+        // ----------------------------------------------------
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Month Filter and Generate Bar */}
+          <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>조회 및 부과 월:</span>
+              <input 
+                type="month" 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(e.target.value)} 
+                style={{ padding: '8px 12px' }}
+              />
+            </div>
+            
+            {billedCount > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  수납 현황: <strong style={{ color: '#fff' }}>{paidCount}</strong> / {billedCount} 세대 완납
+                </span>
+                <div style={{ width: '120px', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${(paidCount / billedCount) * 100}%`, height: '100%', background: 'var(--color-success)', transition: 'var(--transition-smooth)' }}></div>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setShowGenerateModal(true)} className="btn-primary">
+                <Plus size={16} /> 이 달의 관리비 일괄 부과
+              </button>
+            )}
+          </div>
+
+          {/* Bills Table */}
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            {billsLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>로딩 중...</div>
+            ) : bills.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>호수</th>
+                      <th>세대주</th>
+                      <th>청구월</th>
+                      <th style={{ textAlign: 'right' }}>부과 금액</th>
+                      <th style={{ textAlign: 'center' }}>수납 상태</th>
+                      <th>납부일자</th>
+                      <th style={{ textAlign: 'center', width: '120px' }}>납부 처리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bills.map((bill) => {
+                      const isBilled = bill.id !== null;
+                      return (
+                        <tr key={bill.unit_id}>
+                          <td style={{ fontWeight: 600 }}>{bill.unit_name}</td>
+                          <td>{bill.resident_name}</td>
+                          <td style={{ color: 'var(--text-muted)' }}>{selectedMonth}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                            {isBilled ? formatKRW(bill.amount) : <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>미부과</span>}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {isBilled ? (
+                              <span className={`badge ${bill.is_paid === 1 ? 'badge-success' : 'badge-danger'}`}>
+                                {bill.is_paid === 1 ? '완납' : '미납'}
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                          <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            {isBilled && bill.payment_date ? bill.payment_date : '-'}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {isBilled ? (
+                              <button 
+                                onClick={() => handleTogglePay(bill.id)}
+                                className={bill.is_paid === 1 ? 'btn-secondary' : 'btn-primary'}
+                                style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}
+                              >
+                                {bill.is_paid === 1 ? (
+                                  <>
+                                    <XCircle size={14} /> 미납 변경
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={14} /> 완납 처리
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>부과 필요</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                등록된 세대가 없습니다. '세대 정보 관리' 탭에서 세대를 먼저 등록해 주세요.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        // ----------------------------------------------------
+        // 탭 2: 세대 정보 관리 뷰
+        // ----------------------------------------------------
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={() => { setEditingGen(null); setGenForm({ unit_name: '', resident_name: '', contact: '' }); setShowGenModal(true); }} className="btn-primary">
+              <Plus size={16} /> 신규 세대 등록
+            </button>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            {genLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>로딩 중...</div>
+            ) : generations.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="premium-table">
+                  <thead>
+                    <tr>
+                      <th>호수</th>
+                      <th>세대주 이름</th>
+                      <th>연락처</th>
+                      <th style={{ textAlign: 'center', width: '150px' }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {generations.map((gen) => (
+                      <tr key={gen.id}>
+                        <td style={{ fontWeight: 600 }}>{gen.unit_name}</td>
+                        <td>{gen.resident_name}</td>
+                        <td style={{ color: gen.contact ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                          {gen.contact || '등록된 연락처 없음'}
+                        </td>
+                        <td style={{ textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                          <button onClick={() => startEditGen(gen)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}>
+                            <Edit2 size={13} /> 수정
+                          </button>
+                          <button onClick={() => setGenToDelete(gen)} className="btn-danger" style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}>
+                            <Trash2 size={13} /> 삭제
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                등록된 세대가 없습니다. 빌라 호수를 먼저 추가해 주세요.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 1. 세대 등록/수정 모달 */}
+      {showGenModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '400px',
+            padding: '30px',
+            backgroundColor: '#111827',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{editingGen ? '세대 정보 수정' : '신규 세대 등록'}</h3>
+              <button onClick={() => setShowGenModal(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            {genError && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#FCA5A5', fontSize: '0.85rem' }}>
+                <AlertTriangle size={16} />
+                <span>{genError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleGenSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>호수 (예: 101호)</label>
+                <input 
+                  type="text" 
+                  name="unit_name" 
+                  placeholder="예: 101호"
+                  value={genForm.unit_name}
+                  onChange={(e) => setGenForm(p => ({ ...p, unit_name: e.target.value }))}
+                  disabled={!!editingGen} // 수정 시에는 동호수 수정불가로 방어
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>세대주명</label>
+                <input 
+                  type="text" 
+                  name="resident_name" 
+                  placeholder="세대주 이름 입력..."
+                  value={genForm.resident_name}
+                  onChange={(e) => setGenForm(p => ({ ...p, resident_name: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>연락처 (선택)</label>
+                <input 
+                  type="text" 
+                  name="contact" 
+                  placeholder="010-0000-0000"
+                  value={genForm.contact}
+                  onChange={(e) => setGenForm(p => ({ ...p, contact: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={() => setShowGenModal(false)} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>저장</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. 관리비 일괄 부과 모달 */}
+      {showGenerateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '400px',
+            padding: '30px',
+            backgroundColor: '#111827',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{selectedMonth} 관리비 일괄 부과</h3>
+              <button onClick={() => setShowGenerateModal(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            {billError && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#FCA5A5', fontSize: '0.85rem' }}>
+                <AlertTriangle size={16} />
+                <span>{billError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleGenerateBills} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>세대별 청구 금액 (원)</label>
+                <input 
+                  type="number" 
+                  value={generateAmount} 
+                  onChange={(e) => setGenerateAmount(e.target.value)} 
+                  placeholder="예: 70000"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                * 확인 버튼을 누르면 현재 등록된 모든 세대에 대해 지정된 월의 관리비 청구서가 발행됩니다. 이미 청구된 세대는 덮어쓰지 않습니다.
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={() => setShowGenerateModal(false)} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>확인</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. 세대 삭제 재확인 커스텀 모달 */}
+      {genToDelete && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '400px',
+            padding: '30px',
+            backgroundColor: '#111827',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#FCA5A5', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={20} color="#EF4444" />
+                세대 삭제 경고
+              </h3>
+              <button onClick={() => setGenToDelete(null)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ fontSize: '0.95rem', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <p>
+                정말로 <strong style={{ color: '#fff' }}>{genToDelete.unit_name} ({genToDelete.resident_name})</strong> 세대를 삭제하시겠습니까?
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                ※ 세대를 삭제하면 해당 세대에 부과된 월별 관리비 청구서 및 수납 정보가 **함께 영구적으로 삭제**됩니다. 이 작업은 되돌릴 수 없습니다.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <button type="button" onClick={() => setGenToDelete(null)} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
+              <button 
+                type="button" 
+                onClick={() => handleDeleteGen(genToDelete.id)} 
+                className="btn-danger" 
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                삭제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default GenerationList;
