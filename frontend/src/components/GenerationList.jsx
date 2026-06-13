@@ -10,7 +10,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
   const [genLoading, setGenLoading] = useState(false);
   const [showGenModal, setShowGenModal] = useState(false);
   const [editingGen, setEditingGen] = useState(null);
-  const [genForm, setGenForm] = useState({ unit_name: '', resident_name: '', contact: '' });
+  const [genForm, setGenForm] = useState({ unit_name: '', resident_name: '', contact: '', car_model: '', car_number: '' });
   const [genError, setGenError] = useState('');
   const [genToDelete, setGenToDelete] = useState(null); // 삭제 확인용 커스텀 모달 상태 추가
 
@@ -57,7 +57,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           .update({
             unit_name: genForm.unit_name,
             resident_name: genForm.resident_name,
-            contact: genForm.contact
+            contact: genForm.contact,
+            car_model: genForm.car_model,
+            car_number: genForm.car_number
           })
           .eq('id', editingGen.id);
 
@@ -68,7 +70,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           .insert([{
             unit_name: genForm.unit_name,
             resident_name: genForm.resident_name,
-            contact: genForm.contact
+            contact: genForm.contact,
+            car_model: genForm.car_model,
+            car_number: genForm.car_number
           }]);
 
         if (error) {
@@ -80,7 +84,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
       }
 
       setShowGenModal(false);
-      setGenForm({ unit_name: '', resident_name: '', contact: '' });
+      setGenForm({ unit_name: '', resident_name: '', contact: '', car_model: '', car_number: '' });
       setEditingGen(null);
       fetchGenerations();
       // 수납 현황도 갱신
@@ -95,7 +99,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
     setGenForm({
       unit_name: gen.unit_name,
       resident_name: gen.resident_name,
-      contact: gen.contact || ''
+      contact: gen.contact || '',
+      car_model: gen.car_model || '',
+      car_number: gen.car_number || ''
     });
     setShowGenModal(true);
   };
@@ -454,7 +460,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         // ----------------------------------------------------
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button onClick={() => { setEditingGen(null); setGenForm({ unit_name: '', resident_name: '', contact: '' }); setShowGenModal(true); }} className="btn-primary">
+            <button onClick={() => { setEditingGen(null); setGenForm({ unit_name: '', resident_name: '', contact: '', car_model: '', car_number: '' }); setShowGenModal(true); }} className="btn-primary">
               <Plus size={16} /> 신규 세대 등록
             </button>
           </div>
@@ -470,6 +476,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                       <th>호수</th>
                       <th>세대주 이름</th>
                       <th>연락처</th>
+                      <th>차량 정보</th>
                       <th style={{ textAlign: 'center', width: '150px' }}>관리</th>
                     </tr>
                   </thead>
@@ -480,6 +487,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                         <td>{gen.resident_name}</td>
                         <td style={{ color: gen.contact ? 'var(--text-main)' : 'var(--text-muted)' }}>
                           {gen.contact || '등록된 연락처 없음'}
+                        </td>
+                        <td style={{ color: (gen.car_model || gen.car_number) ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          {gen.car_model || gen.car_number ? `${gen.car_model}${gen.car_number ? ` (${gen.car_number})` : ''}` : '등록 없음'}
                         </td>
                         <td style={{ textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center' }}>
                           <button onClick={() => startEditGen(gen)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}>
@@ -570,6 +580,30 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                   placeholder="010-0000-0000"
                   value={genForm.contact}
                   onChange={(e) => setGenForm(p => ({ ...p, contact: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>차종 (선택)</label>
+                <input 
+                  type="text" 
+                  name="car_model" 
+                  placeholder="예: 그랜저"
+                  value={genForm.car_model}
+                  onChange={(e) => setGenForm(p => ({ ...p, car_model: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>차량번호 (선택)</label>
+                <input 
+                  type="text" 
+                  name="car_number" 
+                  placeholder="예: 12가 3456"
+                  value={genForm.car_number}
+                  onChange={(e) => setGenForm(p => ({ ...p, car_number: e.target.value }))}
                   style={{ width: '100%' }}
                 />
               </div>
