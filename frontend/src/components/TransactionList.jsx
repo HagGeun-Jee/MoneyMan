@@ -6,10 +6,17 @@ function TransactionList({ refreshTrigger, onDataChange }) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Filters
+  // Filters (초기값: 당월 1일 ~ 당월 말일)
   const [typeFilter, setTypeFilter] = useState('ALL');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  });
   const [searchQuery, setSearchQuery] = useState('');
 
   // Form states
