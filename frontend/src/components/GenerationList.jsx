@@ -27,6 +27,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
   const [selectedBillForPay, setSelectedBillForPay] = useState(null);
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
 
+  // 4. 관리비 부과 대상 호수 선택 상태
+  const [selectedGenIdsForBill, setSelectedGenIdsForBill] = useState([]);
+
   // ----------------------------------------------------
   // 세대 관리 로직
   // ----------------------------------------------------
@@ -180,6 +183,13 @@ function GenerationList({ refreshTrigger, onDataChange }) {
     }
   };
 
+  const openGenerateModal = () => {
+    setSelectedGenIdsForBill(generations.map(g => g.id));
+    setGenerateAmount('70000');
+    setBillError('');
+    setShowGenerateModal(true);
+  };
+
   const handleGenerateBills = async (e) => {
     e.preventDefault();
     setBillError('');
@@ -187,19 +197,14 @@ function GenerationList({ refreshTrigger, onDataChange }) {
       setBillError('올바른 부과 금액을 입력해 주세요.');
       return;
     }
+    if (selectedGenIdsForBill.length === 0) {
+      setBillError('부과 대상 세대를 최소 1곳 이상 선택해 주세요.');
+      return;
+    }
 
     try {
-      const { data: gens, error: genError } = await supabase
-        .from('generations')
-        .select('id');
-
-      if (genError) throw genError;
-      if (!gens || gens.length === 0) {
-        throw new Error('등록된 세대가 없습니다. 세대를 먼저 등록해주세요.');
-      }
-
-      const billsToInsert = gens.map(g => ({
-        unit_id: g.id,
+      const billsToInsert = selectedGenIdsForBill.map(genId => ({
+        unit_id: genId,
         billing_month: selectedMonth,
         amount: parseInt(generateAmount),
         is_paid: 0
@@ -381,7 +386,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                 </div>
               </div>
             ) : (
-              <button onClick={() => setShowGenerateModal(true)} className="btn-primary">
+              <button onClick={openGenerateModal} className="btn-primary">
                 <Plus size={16} /> 이 달의 관리비 일괄 부과
               </button>
             )}
@@ -670,8 +675,60 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                 />
               </div>
 
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                * 확인 버튼을 누르면 현재 등록된 모든 세대에 대해 지정된 월의 관리비 청구서가 발행됩니다. 이미 청구된 세대는 덮어쓰지 않습니다.
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>부과 대상 호수 선택</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '0.75rem' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setSelectedGenIdsForBill(generations.map(g => g.id))}
+                    style={{ background: 'transparent', border: 'none', color: '#818CF8', cursor: 'pointer', padding: 0, fontWeight: 500 }}
+                  >
+                    전체 선택
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setSelectedGenIdsForBill([])}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, fontWeight: 500 }}
+                  >
+                    선택 해제
+                  </button>
+                </div>
+                <div style={{ 
+                  maxHeight: '150px', 
+                  overflowY: 'auto', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '8px', 
+                  padding: '10px',
+                  backgroundColor: 'rgba(0,0,0,0.2)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '10px'
+                }}>
+                  {generations.map((gen) => {
+                    const isChecked = selectedGenIdsForBill.includes(gen.id);
+                    return (
+                      <label key={gen.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked}
+                          onChange={() => {
+                            if (isChecked) {
+                              setSelectedGenIdsForBill(prev => prev.filter(id => id !== gen.id));
+                            } else {
+                              setSelectedGenIdsForBill(prev => [...prev, gen.id]);
+                            }
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <span>{gen.unit_name} ({gen.resident_name})</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                * 확인 버튼을 누르면 선택된 세대에 대해 지정된 월의 관리비 청구서가 발행됩니다. 이미 청구된 세대는 덮어쓰지 않습니다.
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
