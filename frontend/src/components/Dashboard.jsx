@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Wallet, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, RefreshCw, Image as ImageIcon, X } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, RefreshCw, Image as ImageIcon, X, Calendar } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const COLORS = ['#6366F1', '#34D399', '#EF4444', '#F59E0B', '#A78BFA', '#EC4899'];
@@ -10,6 +10,16 @@ function Dashboard({ refreshTrigger, onDataChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null); // 영수증 보기 모달 상태 추가
+
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const date = String(today.getDate()).padStart(2, '0');
+    const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    const dayName = dayNames[today.getDay()];
+    return `${year}년 ${month}월 ${date}일 (${dayName})`;
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -133,8 +143,24 @@ function Dashboard({ refreshTrigger, onDataChange }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 700 }}>대시보드</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>빌라 관리비 계좌 현황을 실시간으로 확인합니다.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 700, margin: 0 }}>대시보드</h2>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              color: 'var(--text-muted)', 
+              fontSize: '0.85rem', 
+              backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+              padding: '4px 10px', 
+              borderRadius: '20px',
+              border: '1px solid var(--border-color)'
+            }}>
+              <Calendar size={14} style={{ color: '#818CF8' }} />
+              <span>{getTodayString()}</span>
+            </div>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '6px' }}>빌라 관리비 계좌 현황을 실시간으로 확인합니다.</p>
         </div>
         <button onClick={() => { fetchDashboardData(); onDataChange(); }} className="btn-secondary">
           <RefreshCw size={16} /> 새로고침

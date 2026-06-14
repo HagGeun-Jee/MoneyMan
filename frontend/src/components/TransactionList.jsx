@@ -32,6 +32,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
   const [receiptFile, setReceiptFile] = useState(null); // 영수증 파일 상태 추가
   const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null); // 영수증 보기 모달 상태 추가
   const [editingTransaction, setEditingTransaction] = useState(null); // 수정 중인 거래 내역
+  const [deleteExistingReceipt, setDeleteExistingReceipt] = useState(false); // 기존 영수증 삭제 여부 추가
 
   const categories = {
     IN: ['관리비 입금', '이자 수익', '기타 입금'],
@@ -100,6 +101,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
       description: tx.description || ''
     });
     setReceiptFile(null);
+    setDeleteExistingReceipt(false);
     setShowAddForm(true);
   };
 
@@ -119,6 +121,10 @@ function TransactionList({ refreshTrigger, onDataChange }) {
 
     try {
       let receiptImageUrl = editingTransaction ? editingTransaction.receipt_image : null;
+      
+      if (deleteExistingReceipt) {
+        receiptImageUrl = null;
+      }
       
       if (type === 'OUT' && receiptFile) {
         const fileExt = receiptFile.name.split('.').pop();
@@ -175,12 +181,17 @@ function TransactionList({ refreshTrigger, onDataChange }) {
         description: ''
       });
       setReceiptFile(null); // 파일 초기화
+      setDeleteExistingReceipt(false);
       setEditingTransaction(null);
       setShowAddForm(false);
       onDataChange(); // 부모 상태 리프레시 유도
       fetchTransactions();
     } catch (err) {
-      setFormError(err.message);
+      if (err.message && err.message.includes('row-level security policy')) {
+        setFormError('영수증 업로드 권한이 없습니다. Supabase Storage의 receipts 버킷 RLS 정책(insert)을 설정해 주세요.');
+      } else {
+        setFormError(err.message);
+      }
     }
   };
 
@@ -369,7 +380,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{editingTransaction ? '입출금 내역 수정' : '입출금 내역 등록'}</h3>
-              <button onClick={() => { setShowAddForm(false); setEditingTransaction(null); }} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+              <button onClick={() => { setShowAddForm(false); setEditingTransaction(null); setDeleteExistingReceipt(false); setReceiptFile(null); }} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>
 
             {formError && (
@@ -467,16 +478,40 @@ function TransactionList({ refreshTrigger, onDataChange }) {
               {formData.type === 'OUT' && (
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>영수증 사진 첨부 (촬영/갤러리)</label>
-                  {editingTransaction && editingTransaction.receipt_image && (
-                    <div style={{ fontSize: '0.75rem', color: '#818CF8', marginBottom: '6px' }}>
-                      * 기존 영수증 사진 있음 (새 사진 선택 시 교체됩니다.)
+                  {editingTransaction && editingTransaction.receipt_image && !deleteExistingReceipt && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: '#818CF8', marginBottom: '8px', padding: '6px 10px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '6px' }}>
+                      <span>✓ 기존 영수증 사진 있음</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setDeleteExistingReceipt(true)}
+                        style={{ color: '#FCA5A5', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.75rem', textDecoration: 'underline' }}
+                      >
+                        삭제하기
+                      </button>
+                    </div>
+                  )}
+                  {deleteExistingReceipt && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: '#FCA5A5', marginBottom: '8px', padding: '6px 10px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px' }}>
+                      <span>✗ 기존 영수증 삭제 예정</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setDeleteExistingReceipt(false)}
+                        style={{ color: '#818CF8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.75rem', textDecoration: 'underline' }}
+                      >
+                        되돌리기
+                      </button>
                     </div>
                   )}
                   <input 
                     type="file" 
                     accept="image/*" 
                     capture="environment" 
-                    onChange={(e) => setReceiptFile(e.target.files[0] || null)}
+                    onChange={(e) => {
+                      setReceiptFile(e.target.files[0] || null);
+                      if (e.target.files[0]) {
+                        setDeleteExistingReceipt(false);
+                      }
+                    }}
                     style={{ width: '100%', background: 'rgba(17, 24, 39, 0.8)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-main)' }} 
                   />
                   {receiptFile && (
@@ -488,7 +523,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="button" onClick={() => { setShowAddForm(false); setReceiptFile(null); setEditingTransaction(null); }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
+                <button type="button" onClick={() => { setShowAddForm(false); setReceiptFile(null); setDeleteExistingReceipt(false); setEditingTransaction(null); }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
                 <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>{editingTransaction ? '수정' : '등록'}</button>
               </div>
             </form>
