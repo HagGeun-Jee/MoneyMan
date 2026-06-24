@@ -32,6 +32,134 @@ function GenerationList({ refreshTrigger, onDataChange }) {
   // 4. 관리비 부과 대상 호수 선택 상태
   const [selectedGenIdsForBill, setSelectedGenIdsForBill] = useState([]);
 
+  // 5. 공지 템플릿 및 히스토리 관련 상태
+  const [templateText, setTemplateText] = useState('');
+  const [isEditingTemplate, setIsEditingTemplate] = useState(false);
+  const [editTemplateInput, setEditTemplateInput] = useState('');
+  const [historyList, setHistoryList] = useState([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [templateLoading, setTemplateLoading] = useState(false);
+
+  // ----------------------------------------------------
+  // 공지 템플릿 및 히스토리 로직
+  // ----------------------------------------------------
+  const fetchTemplate = async () => {
+    setTemplateLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('message_templates')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        // 기본 템플릿 저장
+        const defaultText = `[MoneyMan 관리비 공지]\n\n입주민 여러분 안녕하십니까.\n{청구월}분 관리비가 부과되었습니다.\n\n바쁘시더라도 납부 기한인 매월 25일까지 입금을 부탁드립니다.\n\n날씨가 많이 더워지는데 건강 유의하시기 바랍니다. 감사합니다.`;
+        const { data: inserted, error: insertError } = await supabase
+          .from('message_templates')
+          .insert([{ id: 1, template_text: defaultText }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        setTemplateText(inserted.template_text);
+        setEditTemplateInput(inserted.template_text);
+      } else {
+        setTemplateText(data.template_text);
+        setEditTemplateInput(data.template_text);
+      }
+    } catch (err) {
+      console.error('Error fetching template:', err);
+    } finally {
+      setTemplateLoading(false);
+    }
+  };
+
+  const handleSaveTemplate = async (e) => {
+    e.preventDefault();
+    if (!editTemplateInput.trim()) {
+      alert('템플릿 내용을 입력해주세요.');
+      return;
+    }
+    try {
+      const { error: updateError } = await supabase
+        .from('message_templates')
+        .update({ template_text: editTemplateInput, updated_at: new Date().toISOString() })
+        .eq('id', 1);
+
+      if (updateError) throw updateError;
+
+      const { error: historyError } = await supabase
+        .from('message_history')
+        .insert([{
+          action_type: 'EDIT',
+          content: editTemplateInput
+        }]);
+
+      if (historyError) throw historyError;
+
+      setTemplateText(editTemplateInput);
+      setIsEditingTemplate(false);
+      alert('템플릿이 성공적으로 저장되었습니다.');
+      fetchHistory();
+    } catch (err) {
+      console.error('Error saving template:', err);
+      alert(`템플릿 저장 실패: ${err.message}`);
+    }
+  };
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('message_history')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setHistoryList(data || []);
+    } catch (err) {
+      console.error('Error fetching history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleCopyAnnouncement = async () => {
+    if (!templateText) {
+      alert('공지문자 템플릿을 불러오는 중이거나 템플릿이 비어있습니다.');
+      return;
+    }
+
+    try {
+      const [year, month] = selectedMonth.split('-');
+      const formattedMonth = `${year}년 ${month}월`;
+
+      const finalContent = templateText.replace(/{청구월}/g, formattedMonth);
+
+      await navigator.clipboard.writeText(finalContent);
+      alert('공지문자가 클립보드에 복사되었습니다! 단톡방에 붙여넣기(Ctrl+V) 하세요.');
+
+      const { error: historyError } = await supabase
+        .from('message_history')
+        .insert([{
+          action_type: 'COPY',
+          content: finalContent
+        }]);
+
+      if (historyError) throw historyError;
+
+      fetchHistory();
+    } catch (err) {
+      console.error('Error copying/logging announcement:', err);
+      alert(`복사에 실패했거나 히스토리 저장 중 오류가 발생했습니다: ${err.message}`);
+    }
+  };
+
   // ----------------------------------------------------
   // 세대 관리 로직
   // ----------------------------------------------------
@@ -380,6 +508,8 @@ function GenerationList({ refreshTrigger, onDataChange }) {
 
   useEffect(() => {
     fetchGenerations();
+    fetchTemplate();
+    fetchHistory();
   }, []);
 
   useEffect(() => {
@@ -463,6 +593,110 @@ function GenerationList({ refreshTrigger, onDataChange }) {
               <button onClick={openGenerateModal} className="btn-primary">
                 <Plus size={16} /> 이 달의 관리비 일괄 부과
               </button>
+            )}
+          </div>
+
+          {/* 공지 메시지 관리 패널 */}
+          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <span style={{ fontWeight: 600, fontSize: '1rem', color: '#fff' }}>카카오톡 단체방 공지 메시지 관리</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {!isEditingTemplate ? (
+                  <>
+                    <button 
+                      onClick={() => setIsEditingTemplate(true)} 
+                      className="btn-secondary" 
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      템플릿 수정
+                    </button>
+                    <button 
+                      onClick={handleCopyAnnouncement} 
+                      className="btn-primary" 
+                      style={{ padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      공지문자 복사
+                    </button>
+                    <button 
+                      onClick={() => setShowHistoryModal(true)} 
+                      className="btn-secondary" 
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      이력 보기
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => {
+                        setEditTemplateInput(templateText);
+                        setIsEditingTemplate(false);
+                      }} 
+                      className="btn-secondary" 
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      취소
+                    </button>
+                    <button 
+                      onClick={handleSaveTemplate} 
+                      className="btn-primary" 
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      저장
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {templateLoading ? (
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>템플릿 로딩 중...</div>
+            ) : isEditingTemplate ? (
+              <form onSubmit={handleSaveTemplate} style={{ width: '100%' }}>
+                <textarea
+                  value={editTemplateInput}
+                  onChange={(e) => setEditTemplateInput(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(0,0,0,0.3)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.85rem',
+                    lineHeight: '1.5',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                  placeholder="공지 템플릿을 입력하세요. {청구월} 변수를 사용할 수 있습니다."
+                />
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                  * 문구 내에 <strong>{`{청구월}`}</strong>을 입력하면 복사할 때 현재 조회 월(예: {selectedMonth.split('-')[0]}년 {selectedMonth.split('-')[1]}월)로 자동 치환되어 복사됩니다.
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{
+                  padding: '12px 15px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  border: '1px dashed var(--border-color)',
+                  fontSize: '0.85rem',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap',
+                  color: 'var(--text-main)'
+                }}>
+                  {templateText ? (
+                    templateText.replace(/{청구월}/g, `${selectedMonth.split('-')[0]}년 ${selectedMonth.split('-')[1]}월`)
+                  ) : (
+                    <span style={{ color: 'var(--text-muted)' }}>등록된 공지 템플릿이 없습니다. [템플릿 수정]을 눌러 작성해 주세요.</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  ※ [공지문자 복사] 버튼을 누르면 위 내용이 클립보드에 복사됩니다. 복사된 내용을 카카오톡 단체방에 붙여넣으세요.
+                </div>
+              </div>
             )}
           </div>
 
@@ -940,6 +1174,86 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
               <button type="button" onClick={() => { setShowPayModal(false); setSelectedBillForPay(null); }} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
               <button type="button" onClick={executePay} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>완납 완료</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. 공지/템플릿 히스토리 모달 */}
+      {showHistoryModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '600px',
+            maxHeight: '80vh',
+            padding: '30px',
+            backgroundColor: '#111827',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>공지 관리 및 복사 이력 (최근 50건)</h3>
+              <button onClick={() => setShowHistoryModal(false)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', paddingRight: '5px' }}>
+              {historyLoading ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>히스토리 로딩 중...</div>
+              ) : historyList.length > 0 ? (
+                historyList.map((hist) => {
+                  const dateStr = new Date(hist.created_at).toLocaleString('ko-KR');
+                  const isEdit = hist.action_type === 'EDIT';
+                  return (
+                    <div 
+                      key={hist.id} 
+                      style={{
+                        padding: '15px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: isEdit ? 'rgba(99, 102, 241, 0.03)' : 'rgba(52, 211, 153, 0.03)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className={`badge`} style={{ backgroundColor: isEdit ? 'rgba(99, 102, 241, 0.2)' : 'rgba(52, 211, 153, 0.2)', color: isEdit ? '#818CF8' : '#34D399', border: `1px solid ${isEdit ? '#6366F1' : '#34D399'}`, padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                          {isEdit ? '템플릿 수정' : '공지문자 복사'}
+                        </span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dateStr}</span>
+                      </div>
+                      <div style={{
+                        fontSize: '0.85rem',
+                        lineHeight: '1.5',
+                        whiteSpace: 'pre-wrap',
+                        color: 'var(--text-main)',
+                        backgroundColor: 'rgba(0,0,0,0.15)',
+                        padding: '10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255,255,255,0.03)'
+                      }}>
+                        {hist.content}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>아직 기록된 이력이 없습니다.</div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button type="button" onClick={() => setShowHistoryModal(false)} className="btn-secondary" style={{ minWidth: '100px', justifyContent: 'center' }}>닫기</button>
             </div>
           </div>
         </div>
