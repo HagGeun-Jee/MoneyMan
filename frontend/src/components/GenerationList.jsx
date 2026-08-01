@@ -72,7 +72,10 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         setEditTemplateInput(data.template_text);
       }
     } catch (err) {
-      console.error('Error fetching template:', err);
+      console.warn('Supabase fetchTemplate 실패, LocalStorage 폴백 사용:', err.message);
+      const localTemplate = localStorage.getItem('money_man_notice_template') || `[MoneyMan 관리비 공지]\n\n입주민 여러분 안녕하십니까.\n{청구월}분 관리비가 부과되었습니다.\n\n바쁘시더라도 납부 기한인 매월 25일까지 입금을 부탁드립니다.\n\n날씨가 많이 더워지는데 건강 유의하시기 바랍니다. 감사합니다.`;
+      setTemplateText(localTemplate);
+      setEditTemplateInput(localTemplate);
     } finally {
       setTemplateLoading(false);
     }
@@ -84,13 +87,24 @@ function GenerationList({ refreshTrigger, onDataChange }) {
       alert('템플릿 내용을 입력해주세요.');
       return;
     }
+
+    // 로컬스토리지에 임시 저장 (백업)
+    localStorage.setItem('money_man_notice_template', editTemplateInput);
+
     try {
       const { error: updateError } = await supabase
         .from('message_templates')
         .update({ template_text: editTemplateInput, updated_at: new Date().toISOString() })
         .eq('id', 1);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        // 만약 row가 존재하지 않는다면 upsert 시도
+        const { error: upsertError } = await supabase
+          .from('message_templates')
+          .upsert([{ id: 1, template_text: editTemplateInput, updated_at: new Date().toISOString() }]);
+        
+        if (upsertError) throw upsertError;
+      }
 
       const { error: historyError } = await supabase
         .from('message_history')
@@ -103,11 +117,25 @@ function GenerationList({ refreshTrigger, onDataChange }) {
 
       setTemplateText(editTemplateInput);
       setIsEditingTemplate(false);
-      alert('템플릿이 성공적으로 저장되었습니다.');
+      alert('템플릿이 성공적으로 저장되었습니다. (DB 동기화 완료)');
       fetchHistory();
     } catch (err) {
-      console.error('Error saving template:', err);
-      alert(`템플릿 저장 실패: ${err.message}`);
+      console.warn('Supabase 저장 실패 (LocalStorage에 로컬 백업 완료):', err.message);
+
+      // 로컬 히스토리 기록
+      const localHistory = JSON.parse(localStorage.getItem('money_man_notice_history') || '[]');
+      localHistory.unshift({
+        id: Date.now(),
+        action_type: 'EDIT',
+        content: editTemplateInput,
+        created_at: new Date().toISOString()
+      });
+      localStorage.setItem('money_man_notice_history', JSON.stringify(localHistory.slice(0, 50)));
+
+      setTemplateText(editTemplateInput);
+      setIsEditingTemplate(false);
+      alert(`템플릿이 로컬에 저장되었습니다.\n(DB 테이블 연동 실패로 브라우저에만 임시 저장되었습니다: ${err.message})`);
+      fetchHistory();
     }
   };
 
@@ -123,7 +151,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
       if (error) throw error;
       setHistoryList(data || []);
     } catch (err) {
-      console.error('Error fetching history:', err);
+      console.warn('Supabase fetchHistory 실패, LocalStorage 히스토리 사용:', err.message);
+      const localHistory = JSON.parse(localStorage.getItem('money_man_notice_history') || '[]');
+      setHistoryList(localHistory);
     } finally {
       setHistoryLoading(false);
     }
@@ -144,19 +174,31 @@ function GenerationList({ refreshTrigger, onDataChange }) {
       await navigator.clipboard.writeText(finalContent);
       alert('공지문자가 클립보드에 복사되었습니다! 단톡방에 붙여넣기(Ctrl+V) 하세요.');
 
-      const { error: historyError } = await supabase
-        .from('message_history')
-        .insert([{
-          action_type: 'COPY',
-          content: finalContent
-        }]);
+      try {
+        const { error: historyError } = await supabase
+          .from('message_history')
+          .insert([{
+            action_type: 'COPY',
+            content: finalContent
+          }]);
 
-      if (historyError) throw historyError;
+        if (historyError) throw historyError;
+      } catch (dbErr) {
+        console.warn('Supabase 복사 이력 기록 실패, LocalStorage에 저장:', dbErr.message);
+        const localHistory = JSON.parse(localStorage.getItem('money_man_notice_history') || '[]');
+        localHistory.unshift({
+          id: Date.now(),
+          action_type: 'COPY',
+          content: finalContent,
+          created_at: new Date().toISOString()
+        });
+        localStorage.setItem('money_man_notice_history', JSON.stringify(localHistory.slice(0, 50)));
+      }
 
       fetchHistory();
     } catch (err) {
-      console.error('Error copying/logging announcement:', err);
-      alert(`복사에 실패했거나 히스토리 저장 중 오류가 발생했습니다: ${err.message}`);
+      console.error('Error copying announcement:', err);
+      alert(`복사에 실패했습니다: ${err.message}`);
     }
   };
 

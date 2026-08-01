@@ -10,6 +10,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null); // 영수증 보기 모달 상태 추가
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()); // 조회 연도 선택 상태
 
   const getTodayString = () => {
     const today = new Date();
@@ -73,34 +74,13 @@ function Dashboard({ refreshTrigger, onDataChange }) {
         .map(cat => ({ category: cat, value: categoryMap[cat] }))
         .sort((a, b) => b.value - a.value);
 
-      // 4) 최근 6개월간 월별 입출금 추이
-      const getRecentMonths = () => {
-        const months = [];
-        const d = new Date();
-        for (let i = 0; i < 6; i++) {
-          const year = d.getFullYear();
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          months.push(`${year}-${month}`);
-          d.setMonth(d.getMonth() - 1);
-        }
-        return months.reverse(); // 연대순 정렬
-      };
-      
-      const recent6Months = getRecentMonths();
-      const monthlyTrend = recent6Months.map(month => {
-        const monthTxs = txList.filter(tx => tx.date && tx.date.startsWith(month));
-        const income = monthTxs.filter(tx => tx.type === 'IN').reduce((acc, tx) => acc + tx.amount, 0);
-        const expense = monthTxs.filter(tx => tx.type === 'OUT').reduce((acc, tx) => acc + tx.amount, 0);
-        return { month, income, expense };
-      });
-
       setData({
         totalBalance,
         monthlyIncome,
         monthlyExpense,
         recentTransactions: recentTransactions || [],
         categoryStats,
-        monthlyTrend
+        transactions: txList
       });
     } catch (err) {
       setError(err.message);
@@ -112,6 +92,36 @@ function Dashboard({ refreshTrigger, onDataChange }) {
   useEffect(() => {
     fetchDashboardData();
   }, [refreshTrigger]);
+
+  // 거래 내역이 존재하는 연도 목록 추출 (중복 제거, 내림차순 정렬)
+  const availableYears = React.useMemo(() => {
+    if (!data || !data.transactions) return [new Date().getFullYear()];
+    const years = data.transactions
+      .map(tx => tx.date ? tx.date.slice(0, 4) : null)
+      .filter(Boolean)
+      .map(Number);
+    return Array.from(new Set([new Date().getFullYear(), ...years])).sort((a, b) => b - a);
+  }, [data]);
+
+  // 선택된 연도의 1월~12월 입출금 추이 데이터 계산
+  const monthlyTrend = React.useMemo(() => {
+    if (!data || !data.transactions) return [];
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthNumber = i + 1;
+      const monthStr = String(monthNumber).padStart(2, '0');
+      const monthPrefix = `${selectedYear}-${monthStr}`;
+      
+      const monthTxs = data.transactions.filter(tx => tx.date && tx.date.startsWith(monthPrefix));
+      const income = monthTxs.filter(tx => tx.type === 'IN').reduce((acc, tx) => acc + tx.amount, 0);
+      const expense = monthTxs.filter(tx => tx.type === 'OUT').reduce((acc, tx) => acc + tx.amount, 0);
+      
+      return {
+        month: `${monthNumber}월`,
+        income,
+        expense
+      };
+    });
+  }, [data, selectedYear]);
 
   const formatKRW = (value) => {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
@@ -136,7 +146,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
     );
   }
 
-  const { totalBalance, monthlyIncome, monthlyExpense, recentTransactions, categoryStats, monthlyTrend } = data;
+  const { totalBalance, monthlyIncome, monthlyExpense, recentTransactions, categoryStats } = data;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -210,7 +220,32 @@ function Dashboard({ refreshTrigger, onDataChange }) {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', minHeight: '380px' }}>
         {/* Monthly Trend Area Chart */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
-          <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '20px' }}>월별 입출금 추이 (최근 6달)</h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+            <h4 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>월별 입출금 추이</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>연도 선택:</span>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  color: 'var(--text-main)',
+                  padding: '4px 8px',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {availableYears.map(year => (
+                  <option key={year} value={year} style={{ backgroundColor: '#1F2937', color: '#fff' }}>
+                    {year}년
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div style={{ width: '100%', height: '300px', flex: 1 }}>
             {monthlyTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
