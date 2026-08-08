@@ -14,8 +14,21 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Mobile Top Header */}
+      <header className="mobile-top-header mobile-only">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Building2 size={24} color="#6366F1" />
+          <span style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.5px', background: 'linear-gradient(to right, #6366F1, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            MoneyMan
+          </span>
+        </div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+          빌라 관리비
+        </div>
+      </header>
+
       {/* Sidebar Navigation */}
-      <aside className="sidebar">
+      <aside className="sidebar desktop-only">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px', paddingLeft: '10px' }}>
           <Building2 size={28} color="#6366F1" />
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.5px', background: 'linear-gradient(to right, #6366F1, #34D399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -106,6 +119,33 @@ function App() {
         {activeTab === 'transactions' && <TransactionList refreshTrigger={refreshTrigger} onDataChange={triggerRefresh} />}
         {activeTab === 'generations' && <GenerationList refreshTrigger={refreshTrigger} onDataChange={triggerRefresh} />}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="mobile-bottom-nav mobile-only">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`mobile-bottom-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+        >
+          <LayoutDashboard size={20} />
+          <span>대시보드</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('transactions')}
+          className={`mobile-bottom-nav-btn ${activeTab === 'transactions' ? 'active' : ''}`}
+        >
+          <Receipt size={20} />
+          <span>입출금 내역</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('generations')}
+          className={`mobile-bottom-nav-btn ${activeTab === 'generations' ? 'active' : ''}`}
+        >
+          <Users size={20} />
+          <span>세대 & 수납</span>
+        </button>
+      </nav>
     </div>
   );
 }

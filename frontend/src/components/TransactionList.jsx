@@ -228,7 +228,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h2 style={{ fontSize: '1.8rem', fontWeight: 700 }}>입출금 내역</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>통장의 모든 입금과 출금 세부 내역을 기록하고 조회합니다.</p>
@@ -284,7 +284,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>로딩 중...</div>
         ) : transactions.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
-            <table className="premium-table">
+            <table className="premium-table responsive-table">
               <thead>
                 <tr>
                   <th>일자</th>
@@ -299,17 +299,17 @@ function TransactionList({ refreshTrigger, onDataChange }) {
               <tbody>
                 {transactions.map((tx) => (
                   <tr key={tx.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{tx.date}</td>
-                    <td>
+                    <td data-label="일자" style={{ color: 'var(--text-muted)' }}>{tx.date}</td>
+                    <td data-label="구분">
                       <span className={`badge ${tx.type === 'IN' ? 'badge-in' : 'badge-out'}`}>
                         {tx.type === 'IN' ? '입금' : '출금'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 500 }}>{tx.category}</td>
-                    <td style={{ color: tx.description ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <td data-label="카테고리" style={{ fontWeight: 500 }}>{tx.category}</td>
+                    <td data-label="적요/비고" style={{ color: tx.description ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
                       {tx.description || '-'}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td data-label="영수증" style={{ textAlign: 'center' }}>
                       {tx.receipt_image ? (
                         <button 
                           onClick={() => setViewingReceiptUrl(tx.receipt_image)}
@@ -324,10 +324,10 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>없음</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
+                    <td data-label="금액" style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
                       {tx.type === 'IN' ? '+' : '-'}{formatKRW(tx.amount).replace('₩', '')}원
                     </td>
-                    <td style={{ textAlign: 'center', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <td data-label="관리" style={{ textAlign: 'center', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                       <button 
                         onClick={() => startEditTransaction(tx)}
                         className="btn-secondary" 
@@ -370,8 +370,9 @@ function TransactionList({ refreshTrigger, onDataChange }) {
           zIndex: 1000
         }}>
           <div className="glass-panel" style={{
-            width: '450px',
-            padding: '30px',
+            width: '90%',
+            maxWidth: '450px',
+            padding: '24px 20px',
             backgroundColor: '#111827',
             display: 'flex',
             flexDirection: 'column',

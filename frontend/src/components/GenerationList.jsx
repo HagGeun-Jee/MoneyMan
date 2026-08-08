@@ -748,7 +748,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>로딩 중...</div>
             ) : bills.length > 0 ? (
               <div style={{ overflowX: 'auto' }}>
-                <table className="premium-table">
+                <table className="premium-table responsive-table">
                   <thead>
                     <tr>
                       <th>호수</th>
@@ -765,13 +765,13 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                       const isBilled = bill.id !== null;
                       return (
                         <tr key={bill.unit_id}>
-                          <td style={{ fontWeight: 600 }}>{bill.unit_name}</td>
-                          <td>{bill.resident_name}</td>
-                          <td style={{ color: 'var(--text-muted)' }}>{selectedMonth}</td>
-                          <td style={{ textAlign: 'right', fontWeight: 500 }}>
+                          <td data-label="호수" style={{ fontWeight: 600 }}>{bill.unit_name}</td>
+                          <td data-label="세대주">{bill.resident_name}</td>
+                          <td data-label="청구월" style={{ color: 'var(--text-muted)' }}>{selectedMonth}</td>
+                          <td data-label="부과 금액" style={{ textAlign: 'right', fontWeight: 500 }}>
                             {isBilled ? formatKRW(bill.amount) : <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>미부과</span>}
                           </td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td data-label="수납 상태" style={{ textAlign: 'center' }}>
                             {isBilled ? (
                               <span className={`badge ${bill.is_paid === 1 ? 'badge-success' : 'badge-danger'}`}>
                                 {bill.is_paid === 1 ? '완납' : '미납'}
@@ -780,10 +780,10 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                               '-'
                             )}
                           </td>
-                          <td style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                          <td data-label="납부일자" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                             {isBilled && bill.payment_date ? bill.payment_date : '-'}
                           </td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td data-label="납부 처리" style={{ textAlign: 'center' }}>
                             {isBilled ? (
                               <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
                                 <button 
@@ -852,7 +852,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
               <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>로딩 중...</div>
             ) : generations.length > 0 ? (
               <div style={{ overflowX: 'auto' }}>
-                <table className="premium-table">
+                <table className="premium-table responsive-table">
                   <thead>
                     <tr>
                       <th>호수</th>
@@ -865,15 +865,15 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                   <tbody>
                     {generations.map((gen) => (
                       <tr key={gen.id}>
-                        <td style={{ fontWeight: 600 }}>{gen.unit_name}</td>
-                        <td>{gen.resident_name}</td>
-                        <td style={{ color: gen.contact ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                        <td data-label="호수" style={{ fontWeight: 600 }}>{gen.unit_name}</td>
+                        <td data-label="세대주 이름">{gen.resident_name}</td>
+                        <td data-label="연락처" style={{ color: gen.contact ? 'var(--text-main)' : 'var(--text-muted)' }}>
                           {gen.contact || '등록된 연락처 없음'}
                         </td>
-                        <td style={{ color: (gen.car_model || gen.car_number) ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        <td data-label="차량 정보" style={{ color: (gen.car_model || gen.car_number) ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
                           {gen.car_model || gen.car_number ? `${gen.car_model}${gen.car_number ? ` (${gen.car_number})` : ''}` : '등록 없음'}
                         </td>
-                        <td style={{ textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <td data-label="관리" style={{ textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center' }}>
                           <button onClick={() => startEditGen(gen)} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', gap: '4px' }}>
                             <Edit2 size={13} /> 수정
                           </button>
@@ -908,8 +908,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           zIndex: 1000
         }}>
           <div className="glass-panel" style={{
-            width: '400px',
-            padding: '30px',
+            width: '90%',
+            maxWidth: '400px',
+            padding: '24px 20px',
             backgroundColor: '#111827',
             display: 'flex',
             flexDirection: 'column',
@@ -1012,8 +1013,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           zIndex: 1000
         }}>
           <div className="glass-panel" style={{
-            width: '400px',
-            padding: '30px',
+            width: '90%',
+            maxWidth: '400px',
+            padding: '24px 20px',
             backgroundColor: '#111827',
             display: 'flex',
             flexDirection: 'column',
@@ -1122,8 +1124,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           zIndex: 1000
         }}>
           <div className="glass-panel" style={{
-            width: '400px',
-            padding: '30px',
+            width: '90%',
+            maxWidth: '400px',
+            padding: '24px 20px',
             backgroundColor: '#111827',
             display: 'flex',
             flexDirection: 'column',
@@ -1175,8 +1178,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           zIndex: 1000
         }}>
           <div className="glass-panel" style={{
-            width: '400px',
-            padding: '30px',
+            width: '90%',
+            maxWidth: '400px',
+            padding: '24px 20px',
             backgroundColor: '#111827',
             display: 'flex',
             flexDirection: 'column',
@@ -1234,9 +1238,10 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           zIndex: 1000
         }}>
           <div className="glass-panel" style={{
-            width: '600px',
+            width: '90%',
+            maxWidth: '600px',
             maxHeight: '80vh',
-            padding: '30px',
+            padding: '24px 20px',
             backgroundColor: '#111827',
             display: 'flex',
             flexDirection: 'column',

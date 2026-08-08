@@ -151,7 +151,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <h2 style={{ fontSize: '1.8rem', fontWeight: 700, margin: 0 }}>대시보드</h2>
@@ -217,7 +217,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
       </div>
 
       {/* Charts Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', minHeight: '380px' }}>
+      <div className="dashboard-charts-grid">
         {/* Monthly Trend Area Chart */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
@@ -339,7 +339,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
         </div>
         <div style={{ overflowX: 'auto' }}>
           {recentTransactions.length > 0 ? (
-            <table className="premium-table">
+            <table className="premium-table responsive-table">
               <thead>
                 <tr>
                   <th>일자</th>
@@ -353,17 +353,17 @@ function Dashboard({ refreshTrigger, onDataChange }) {
               <tbody>
                 {recentTransactions.map((tx) => (
                   <tr key={tx.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>{tx.date}</td>
-                    <td>
+                    <td data-label="일자" style={{ color: 'var(--text-muted)' }}>{tx.date}</td>
+                    <td data-label="구분">
                       <span className={`badge ${tx.type === 'IN' ? 'badge-in' : 'badge-out'}`}>
                         {tx.type === 'IN' ? '입금' : '출금'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 500 }}>{tx.category}</td>
-                    <td style={{ color: tx.description ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <td data-label="카테고리" style={{ fontWeight: 500 }}>{tx.category}</td>
+                    <td data-label="적요/비고" style={{ color: tx.description ? 'var(--text-main)' : 'var(--text-muted)', fontSize: '0.9rem' }}>
                       {tx.description || '-'}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td data-label="영수증" style={{ textAlign: 'center' }}>
                       {tx.receipt_image ? (
                         <button 
                           onClick={() => setViewingReceiptUrl(tx.receipt_image)}
@@ -378,7 +378,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>없음</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
+                    <td data-label="금액" style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
                       {tx.type === 'IN' ? '+' : '-'}{formatKRW(tx.amount).replace('₩', '')}원
                     </td>
                   </tr>
