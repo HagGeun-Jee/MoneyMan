@@ -92,15 +92,16 @@ input[type="date"] {
 /* Invert webkit calendar icon to be white/visible */
 input[type="month"]::-webkit-calendar-picker-indicator,
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+  filter: invert(1) !important;
+  -webkit-filter: invert(1) !important;
   cursor: pointer;
-  opacity: 0.8;
+  opacity: 0.8 !important;
   transition: var(--transition-smooth);
 }
 
 input[type="month"]::-webkit-calendar-picker-indicator:hover,
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 /* Scrollbar */
