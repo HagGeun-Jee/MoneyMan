@@ -80,6 +80,29 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
+/* Date and Month Input styles for visibility in dark theme */
+input[type="month"],
+input[type="date"] {
+  color-scheme: dark; /* Enables browser-default dark mode calendar drop down */
+  color: var(--text-main) !important;
+  background-color: rgba(31, 41, 55, 0.85) !important; /* Slightly lighter bg for better contrast */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Clear border */
+}
+
+/* Invert webkit calendar icon to be white/visible */
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: var(--transition-smooth);
+}
+
+input[type="month"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
