@@ -89,19 +89,24 @@ input[type="date"] {
   border: 1px solid rgba(255, 255, 255, 0.2) !important; /* Clear border */
 }
 
-/* Invert webkit calendar icon to be white/visible */
+/* Invert webkit calendar icon to be white/visible and make it stand out */
 input[type="month"]::-webkit-calendar-picker-indicator,
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) !important;
   -webkit-filter: invert(1) !important;
   cursor: pointer;
-  opacity: 0.8 !important;
+  opacity: 1 !important;
+  transform: scale(1.2) !important;
+  margin-right: 2px !important;
+  padding: 2px !important;
+  border-radius: 4px !important;
   transition: var(--transition-smooth);
 }
 
 input[type="month"]::-webkit-calendar-picker-indicator:hover,
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1 !important;
+  transform: scale(1.35) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Scrollbar */
