@@ -314,7 +314,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                         <button 
                           onClick={() => setViewingReceiptUrl(tx.receipt_image)}
                           className="btn-secondary"
-                          style={{ padding: '6px 10px', fontSize: '0.75rem', borderRadius: '6px', color: '#818CF8', gap: '4px' }}
+                          style={{ padding: '6px 10px', fontSize: '0.75rem', borderRadius: '6px', color: 'var(--color-primary)', gap: '4px' }}
                           title="영수증 보기"
                         >
                           <ImageIcon size={14} />
@@ -324,14 +324,14 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>없음</span>
                       )}
                     </td>
-                    <td data-label="금액" style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
+                    <td data-label="금액" style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#059669' : '#DC2626' }}>
                       {tx.type === 'IN' ? '+' : '-'}{formatKRW(tx.amount).replace('₩', '')}원
                     </td>
                     <td data-label="관리" style={{ textAlign: 'center', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                       <button 
                         onClick={() => startEditTransaction(tx)}
                         className="btn-secondary" 
-                        style={{ padding: '6px', borderRadius: '6px', color: '#818CF8' }}
+                        style={{ padding: '6px', borderRadius: '6px', color: 'var(--color-primary)' }}
                         title="거래 수정"
                       >
                         <Edit2 size={15} />
@@ -362,7 +362,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'center',
@@ -373,10 +373,11 @@ function TransactionList({ refreshTrigger, onDataChange }) {
             width: '90%',
             maxWidth: '450px',
             padding: '24px 20px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            boxShadow: 'var(--shadow-modal)',
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -385,7 +386,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
             </div>
 
             {formError && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#FCA5A5', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', fontSize: '0.85rem' }}>
                 <AlertTriangle size={16} />
                 <span>{formError}</span>
               </div>
@@ -401,9 +402,9 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                     style={{
                       flex: 1, padding: '10px', borderRadius: '8px',
                       border: '1px solid',
-                      borderColor: formData.type === 'IN' ? '#10B981' : 'var(--border-color)',
-                      backgroundColor: formData.type === 'IN' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                      color: formData.type === 'IN' ? '#34D399' : 'var(--text-muted)',
+                      borderColor: formData.type === 'IN' ? '#059669' : 'var(--border-color)',
+                      backgroundColor: formData.type === 'IN' ? '#ECFDF5' : 'transparent',
+                      color: formData.type === 'IN' ? '#047857' : 'var(--text-muted)',
                       fontWeight: 600
                     }}
                   >
@@ -415,9 +416,9 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                     style={{
                       flex: 1, padding: '10px', borderRadius: '8px',
                       border: '1px solid',
-                      borderColor: formData.type === 'OUT' ? '#EF4444' : 'var(--border-color)',
-                      backgroundColor: formData.type === 'OUT' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
-                      color: formData.type === 'OUT' ? '#FCA5A5' : 'var(--text-muted)',
+                      borderColor: formData.type === 'OUT' ? '#DC2626' : 'var(--border-color)',
+                      backgroundColor: formData.type === 'OUT' ? '#FEF2F2' : 'transparent',
+                      color: formData.type === 'OUT' ? '#B91C1C' : 'var(--text-muted)',
                       fontWeight: 600
                     }}
                   >
@@ -480,24 +481,24 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>영수증 사진 첨부 (촬영/갤러리)</label>
                   {editingTransaction && editingTransaction.receipt_image && !deleteExistingReceipt && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: '#818CF8', marginBottom: '8px', padding: '6px 10px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-primary)', marginBottom: '8px', padding: '6px 10px', background: 'rgba(79, 70, 229, 0.08)', borderRadius: '6px' }}>
                       <span>✓ 기존 영수증 사진 있음</span>
                       <button 
                         type="button" 
                         onClick={() => setDeleteExistingReceipt(true)}
-                        style={{ color: '#FCA5A5', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.75rem', textDecoration: 'underline' }}
+                        style={{ color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.75rem', textDecoration: 'underline' }}
                       >
                         삭제하기
                       </button>
                     </div>
                   )}
                   {deleteExistingReceipt && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: '#FCA5A5', marginBottom: '8px', padding: '6px 10px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: '#DC2626', marginBottom: '8px', padding: '6px 10px', background: '#FEF2F2', borderRadius: '6px' }}>
                       <span>✗ 기존 영수증 삭제 예정</span>
                       <button 
                         type="button" 
                         onClick={() => setDeleteExistingReceipt(false)}
-                        style={{ color: '#818CF8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.75rem', textDecoration: 'underline' }}
+                        style={{ color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.75rem', textDecoration: 'underline' }}
                       >
                         되돌리기
                       </button>
@@ -513,10 +514,10 @@ function TransactionList({ refreshTrigger, onDataChange }) {
                         setDeleteExistingReceipt(false);
                       }
                     }}
-                    style={{ width: '100%', background: 'rgba(17, 24, 39, 0.8)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-main)' }} 
+                    style={{ width: '100%', background: '#FFFFFF', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-main)' }} 
                   />
                   {receiptFile && (
-                    <span style={{ fontSize: '0.75rem', color: '#34D399', marginTop: '4px', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#059669', marginTop: '4px', display: 'block', fontWeight: 500 }}>
                       ✓ {receiptFile.name} 선택됨
                     </span>
                   )}
@@ -537,7 +538,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
           backdropFilter: 'blur(6px)',
           display: 'flex',
           justifyContent: 'center',
@@ -546,13 +547,13 @@ function TransactionList({ refreshTrigger, onDataChange }) {
         }}>
           <div className="glass-panel" style={{
             padding: '24px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px',
             maxWidth: '90%',
             maxHeight: '90%',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+            boxShadow: 'var(--shadow-modal)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1.05rem' }}>영수증 사진 확대 보기</span>
@@ -562,7 +563,7 @@ function TransactionList({ refreshTrigger, onDataChange }) {
               <img 
                 src={viewingReceiptUrl} 
                 alt="Receipt Detail" 
-                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px', objectFit: 'contain', border: '1px solid rgba(255,255,255,0.05)' }} 
+                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px', objectFit: 'contain', border: '1px solid var(--border-color)' }} 
               />
             </div>
           </div>

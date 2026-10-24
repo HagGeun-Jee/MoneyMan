@@ -50,9 +50,9 @@ function App() {
               textAlign: 'left',
               fontWeight: 500,
               fontSize: '0.95rem',
-              backgroundColor: activeTab === 'dashboard' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-              color: activeTab === 'dashboard' ? '#818CF8' : 'var(--text-muted)',
-              borderLeft: activeTab === 'dashboard' ? '3px solid #6366F1' : '3px solid transparent',
+              backgroundColor: activeTab === 'dashboard' ? 'rgba(79, 70, 229, 0.08)' : 'transparent',
+              color: activeTab === 'dashboard' ? 'var(--color-primary)' : 'var(--text-muted)',
+              borderLeft: activeTab === 'dashboard' ? '3px solid var(--color-primary)' : '3px solid transparent',
               transition: 'var(--transition-smooth)'
             }}
           >
@@ -73,9 +73,9 @@ function App() {
               textAlign: 'left',
               fontWeight: 500,
               fontSize: '0.95rem',
-              backgroundColor: activeTab === 'transactions' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-              color: activeTab === 'transactions' ? '#818CF8' : 'var(--text-muted)',
-              borderLeft: activeTab === 'transactions' ? '3px solid #6366F1' : '3px solid transparent',
+              backgroundColor: activeTab === 'transactions' ? 'rgba(79, 70, 229, 0.08)' : 'transparent',
+              color: activeTab === 'transactions' ? 'var(--color-primary)' : 'var(--text-muted)',
+              borderLeft: activeTab === 'transactions' ? '3px solid var(--color-primary)' : '3px solid transparent',
               transition: 'var(--transition-smooth)'
             }}
           >
@@ -96,9 +96,9 @@ function App() {
               textAlign: 'left',
               fontWeight: 500,
               fontSize: '0.95rem',
-              backgroundColor: activeTab === 'generations' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-              color: activeTab === 'generations' ? '#818CF8' : 'var(--text-muted)',
-              borderLeft: activeTab === 'generations' ? '3px solid #6366F1' : '3px solid transparent',
+              backgroundColor: activeTab === 'generations' ? 'rgba(79, 70, 229, 0.08)' : 'transparent',
+              color: activeTab === 'generations' ? 'var(--color-primary)' : 'var(--text-muted)',
+              borderLeft: activeTab === 'generations' ? '3px solid var(--color-primary)' : '3px solid transparent',
               transition: 'var(--transition-smooth)'
             }}
           >

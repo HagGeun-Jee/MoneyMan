@@ -138,7 +138,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
 
   if (error) {
     return (
-      <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', color: '#FCA5A5' }}>
+      <div style={{ padding: '20px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '12px', color: '#DC2626' }}>
         <h3>에러가 발생했습니다.</h3>
         <p>{error}</p>
         <button onClick={fetchDashboardData} className="btn-secondary" style={{ marginTop: '10px' }}>다시 시도</button>
@@ -161,12 +161,12 @@ function Dashboard({ refreshTrigger, onDataChange }) {
               gap: '6px', 
               color: 'var(--text-muted)', 
               fontSize: '0.85rem', 
-              backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+              backgroundColor: '#F1F5F9', 
               padding: '4px 10px', 
               borderRadius: '20px',
               border: '1px solid var(--border-color)'
             }}>
-              <Calendar size={14} style={{ color: '#818CF8' }} />
+              <Calendar size={14} style={{ color: 'var(--color-primary)' }} />
               <span>{getTodayString()}</span>
             </div>
           </div>
@@ -182,7 +182,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
         {/* Balance Card */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: 'radial-gradient(circle, var(--color-primary-glow) 0%, transparent 70%)' }}></div>
-          <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '16px', borderRadius: '12px', color: 'var(--color-primary)' }}>
+          <div style={{ background: 'rgba(79, 70, 229, 0.1)', padding: '16px', borderRadius: '12px', color: 'var(--color-primary)' }}>
             <Wallet size={28} />
           </div>
           <div>
@@ -194,24 +194,24 @@ function Dashboard({ refreshTrigger, onDataChange }) {
         {/* Income Card */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: 'radial-gradient(circle, var(--color-success-glow) 0%, transparent 70%)' }}></div>
-          <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '16px', borderRadius: '12px', color: 'var(--color-success)' }}>
+          <div style={{ background: 'rgba(5, 150, 105, 0.1)', padding: '16px', borderRadius: '12px', color: 'var(--color-success)' }}>
             <TrendingUp size={28} />
           </div>
           <div>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>이번 달 총 입금</span>
-            <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '4px', color: '#34D399', letterSpacing: '-0.5px' }}>{formatKRW(monthlyIncome)}</h3>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '4px', color: '#059669', letterSpacing: '-0.5px' }}>{formatKRW(monthlyIncome)}</h3>
           </div>
         </div>
 
         {/* Expense Card */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-10px', right: '-10px', width: '80px', height: '80px', background: 'radial-gradient(circle, var(--color-danger-glow) 0%, transparent 70%)' }}></div>
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', padding: '16px', borderRadius: '12px', color: 'var(--color-danger)' }}>
+          <div style={{ background: 'rgba(220, 38, 38, 0.1)', padding: '16px', borderRadius: '12px', color: 'var(--color-danger)' }}>
             <TrendingDown size={28} />
           </div>
           <div>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>이번 달 총 출금</span>
-            <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '4px', color: '#FCA5A5', letterSpacing: '-0.5px' }}>{formatKRW(monthlyExpense)}</h3>
+            <h3 style={{ fontSize: '1.6rem', fontWeight: 700, marginTop: '4px', color: '#DC2626', letterSpacing: '-0.5px' }}>{formatKRW(monthlyExpense)}</h3>
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  backgroundColor: '#FFFFFF',
                   border: '1px solid var(--border-color)',
                   borderRadius: '6px',
                   color: 'var(--text-main)',
@@ -239,7 +239,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                 }}
               >
                 {availableYears.map(year => (
-                  <option key={year} value={year} style={{ backgroundColor: '#1F2937', color: '#fff' }}>
+                  <option key={year} value={year} style={{ backgroundColor: '#FFFFFF', color: '#0F172A' }}>
                     {year}년
                   </option>
                 ))}
@@ -252,24 +252,24 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                 <AreaChart data={monthlyTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="incomeGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34D399" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#34D399" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="expenseGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#DC2626" stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor="#DC2626" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="month" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                   <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} tickFormatter={(v) => v >= 10000 ? `${v / 10000}만` : v} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', borderColor: 'var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                    contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '8px', color: '#0F172A', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                     formatter={(value) => [formatKRW(value), '']}
                   />
                   <Legend verticalAlign="top" height={36} iconType="circle" />
-                  <Area name="입금" type="monotone" dataKey="income" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#incomeGlow)" />
-                  <Area name="출금" type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2} fillOpacity={1} fill="url(#expenseGlow)" />
+                  <Area name="입금" type="monotone" dataKey="income" stroke="#059669" strokeWidth={2} fillOpacity={1} fill="url(#incomeGlow)" />
+                  <Area name="출금" type="monotone" dataKey="expense" stroke="#DC2626" strokeWidth={2} fillOpacity={1} fill="url(#expenseGlow)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
@@ -304,7 +304,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                         ))}
                       </Pie>
                       <Tooltip 
-                        contentStyle={{ backgroundColor: '#1F2937', borderColor: 'var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                        contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '8px', color: '#0F172A', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                         formatter={(value) => [formatKRW(value), '']}
                       />
                     </PieChart>
@@ -368,7 +368,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                         <button 
                           onClick={() => setViewingReceiptUrl(tx.receipt_image)}
                           className="btn-secondary"
-                          style={{ padding: '6px 10px', fontSize: '0.75rem', borderRadius: '6px', color: '#818CF8', gap: '4px' }}
+                          style={{ padding: '6px 10px', fontSize: '0.75rem', borderRadius: '6px', color: 'var(--color-primary)', gap: '4px' }}
                           title="영수증 보기"
                         >
                           <ImageIcon size={14} />
@@ -378,7 +378,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>없음</span>
                       )}
                     </td>
-                    <td data-label="금액" style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#34D399' : '#FCA5A5' }}>
+                    <td data-label="금액" style={{ textAlign: 'right', fontWeight: 600, color: tx.type === 'IN' ? '#059669' : '#DC2626' }}>
                       {tx.type === 'IN' ? '+' : '-'}{formatKRW(tx.amount).replace('₩', '')}원
                     </td>
                   </tr>
@@ -386,7 +386,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
               </tbody>
             </table>
           ) : (
-            <div style={{ padding: '40px 0', textPosition: 'center', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
               등록된 거래 내역이 없습니다.
             </div>
           )}
@@ -397,7 +397,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
           backdropFilter: 'blur(6px)',
           display: 'flex',
           justifyContent: 'center',
@@ -406,13 +406,13 @@ function Dashboard({ refreshTrigger, onDataChange }) {
         }}>
           <div className="glass-panel" style={{
             padding: '24px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px',
             maxWidth: '90%',
             maxHeight: '90%',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+            boxShadow: 'var(--shadow-modal)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1.05rem' }}>영수증 사진 확대 보기</span>
@@ -422,7 +422,7 @@ function Dashboard({ refreshTrigger, onDataChange }) {
               <img 
                 src={viewingReceiptUrl} 
                 alt="Receipt Detail" 
-                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px', objectFit: 'contain', border: '1px solid rgba(255,255,255,0.05)' }} 
+                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: '8px', objectFit: 'contain', border: '1px solid var(--border-color)' }} 
               />
             </div>
           </div>

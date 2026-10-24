@@ -576,7 +576,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         </div>
         
         {/* Sub Navigation Tabs */}
-        <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+        <div style={{ display: 'flex', background: '#F1F5F9', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <button 
             onClick={() => setActiveSubTab('bills')}
             style={{
@@ -625,9 +625,9 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             {billedCount > 0 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                  수납 현황: <strong style={{ color: '#fff' }}>{paidCount}</strong> / {billedCount} 세대 완납
+                  수납 현황: <strong style={{ color: 'var(--text-main)' }}>{paidCount}</strong> / {billedCount} 세대 완납
                 </span>
-                <div style={{ width: '120px', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ width: '120px', height: '8px', background: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
                   <div style={{ width: `${(paidCount / billedCount) * 100}%`, height: '100%', background: 'var(--color-success)', transition: 'var(--transition-smooth)' }}></div>
                 </div>
               </div>
@@ -641,7 +641,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
           {/* 공지 메시지 관리 패널 */}
           <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              <span style={{ fontWeight: 600, fontSize: '1rem', color: '#fff' }}>카카오톡 단체방 공지 메시지 관리</span>
+              <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-main)' }}>카카오톡 단체방 공지 메시지 관리</span>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {!isEditingTemplate ? (
                   <>
@@ -722,7 +722,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                 <div style={{
                   padding: '12px 15px',
                   borderRadius: '8px',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  backgroundColor: '#F8FAFC',
                   border: '1px dashed var(--border-color)',
                   fontSize: '0.85rem',
                   lineHeight: '1.6',
@@ -900,7 +900,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'center',
@@ -911,10 +911,11 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             width: '90%',
             maxWidth: '400px',
             padding: '24px 20px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            boxShadow: 'var(--shadow-modal)',
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -923,7 +924,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             </div>
 
             {genError && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#FCA5A5', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', fontSize: '0.85rem' }}>
                 <AlertTriangle size={16} />
                 <span>{genError}</span>
               </div>
@@ -1005,7 +1006,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'center',
@@ -1016,10 +1017,11 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             width: '90%',
             maxWidth: '400px',
             padding: '24px 20px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            boxShadow: 'var(--shadow-modal)',
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1028,7 +1030,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             </div>
 
             {billError && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#FCA5A5', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', fontSize: '0.85rem' }}>
                 <AlertTriangle size={16} />
                 <span>{billError}</span>
               </div>
@@ -1116,7 +1118,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'center',
@@ -1127,15 +1129,16 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             width: '90%',
             maxWidth: '400px',
             padding: '24px 20px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            boxShadow: 'var(--shadow-modal)',
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#FCA5A5', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertTriangle size={20} color="#EF4444" />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#DC2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={20} color="#DC2626" />
                 세대 삭제 경고
               </h3>
               <button onClick={() => setGenToDelete(null)} style={{ color: 'var(--text-muted)' }}><X size={20} /></button>
@@ -1143,7 +1146,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
 
             <div style={{ fontSize: '0.95rem', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <p>
-                정말로 <strong style={{ color: '#fff' }}>{genToDelete.unit_name} ({genToDelete.resident_name})</strong> 세대를 삭제하시겠습니까?
+                정말로 <strong style={{ color: 'var(--text-main)' }}>{genToDelete.unit_name} ({genToDelete.resident_name})</strong> 세대를 삭제하시겠습니까?
               </p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 ※ 세대를 삭제하면 해당 세대에 부과된 월별 관리비 청구서 및 수납 정보가 **함께 영구적으로 삭제**됩니다. 이 작업은 되돌릴 수 없습니다.
@@ -1170,7 +1173,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'center',
@@ -1181,10 +1184,11 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             width: '90%',
             maxWidth: '400px',
             padding: '24px 20px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            boxShadow: 'var(--shadow-modal)',
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1203,7 +1207,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-muted)' }}>납부 금액:</span>
-                <strong style={{ color: '#818CF8' }}>{formatKRW(selectedBillForPay.amount)}</strong>
+                <strong style={{ color: 'var(--color-primary)' }}>{formatKRW(selectedBillForPay.amount)}</strong>
               </div>
             </div>
 
@@ -1230,7 +1234,7 @@ function GenerationList({ refreshTrigger, onDataChange }) {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.5)',
           backdropFilter: 'blur(4px)',
           display: 'flex',
           justifyContent: 'center',
@@ -1242,10 +1246,11 @@ function GenerationList({ refreshTrigger, onDataChange }) {
             maxWidth: '600px',
             maxHeight: '80vh',
             padding: '24px 20px',
-            backgroundColor: '#111827',
+            backgroundColor: 'var(--bg-modal)',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            boxShadow: 'var(--shadow-modal)',
             animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1267,14 +1272,14 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                         padding: '15px',
                         borderRadius: '8px',
                         border: '1px solid var(--border-color)',
-                        backgroundColor: isEdit ? 'rgba(99, 102, 241, 0.03)' : 'rgba(52, 211, 153, 0.03)',
+                        backgroundColor: '#FFFFFF',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '8px'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span className={`badge`} style={{ backgroundColor: isEdit ? 'rgba(99, 102, 241, 0.2)' : 'rgba(52, 211, 153, 0.2)', color: isEdit ? '#818CF8' : '#34D399', border: `1px solid ${isEdit ? '#6366F1' : '#34D399'}`, padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                        <span className={`badge`} style={{ backgroundColor: isEdit ? '#EEF2FF' : '#ECFDF5', color: isEdit ? 'var(--color-primary)' : '#059669', border: `1px solid ${isEdit ? '#C7D2FE' : '#A7F3D0'}`, padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem' }}>
                           {isEdit ? '템플릿 수정' : '공지문자 복사'}
                         </span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dateStr}</span>
@@ -1284,10 +1289,10 @@ function GenerationList({ refreshTrigger, onDataChange }) {
                         lineHeight: '1.5',
                         whiteSpace: 'pre-wrap',
                         color: 'var(--text-main)',
-                        backgroundColor: 'rgba(0,0,0,0.15)',
+                        backgroundColor: '#F8FAFC',
                         padding: '10px',
                         borderRadius: '6px',
-                        border: '1px solid rgba(255,255,255,0.03)'
+                        border: '1px solid var(--border-color)'
                       }}>
                         {hist.content}
                       </div>
